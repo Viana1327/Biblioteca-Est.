@@ -149,6 +149,12 @@ header{flex-wrap:wrap}
 #bPasta{max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #bPasta.ok{border-color:var(--ok);color:var(--ok)}
 #bPasta.sujo{border-color:var(--wa);color:var(--wa);font-weight:600}
+#fPer{width:auto;min-width:170px}
+.lkx{display:block;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none;font-size:14px}
+.lkx:hover,.lkx:focus-visible{background:var(--pn);color:var(--ac)}
+.lkx small{display:block;color:var(--mu);font-size:12px;line-height:1.35}
+a.pc{display:block;color:inherit;text-decoration:none}
+a.pc:hover{box-shadow:0 2px 10px rgba(0,0,0,.18)}
 </style>
 </head>
 <body>
@@ -172,8 +178,10 @@ header{flex-wrap:wrap}
       <button data-a="pdf">PDF</button><button data-a="ppt">Slides (.pptx)</button>
       <button data-a="bkp">Backup (.json)</button><button data-a="imp">Importar backup</button>
       <input type="file" id="arq" accept="application/json,.json" hidden></div></details>
+    <details class="ex" id="lkBox" open hidden><summary>🔗 Sites de apoio</summary><div id="lkLista"></div></details>
   </div>
   <div id="arv"></div>
+  <p id="ver" class="dica" style="margin:14px 4px 0"></p>
 </nav>
 <main id="pri"></main>
 </div>
@@ -181,7 +189,7 @@ header{flex-wrap:wrap}
  <div class="ib"><button id="introX" class="ix" aria-label="Fechar" hidden>✕</button>
   <h2 id="introT">📚 Biblioteca de Estudos</h2>
   <p>Seu espaço para organizar o curso: matérias por período, tópicos com status coloridos, bloco de notas, pasta de arquivos (áudio, vídeo e PDF) e exportação em PDF ou slides. Tudo fica guardado neste computador.</p>
-  <h3>Escolha o curso</h3><div class="cgr" id="cgr"></div></div></div>
+  <h3>Escolha o curso</h3><div class="cgr" id="cgr"></div><p class="dica" id="verIntro" style="margin-top:18px"></p></div></div>
 <dialog id="dlg"><form method="dialog">
   <label id="dlgT" for="dlgI"></label><input id="dlgI" required>
   <div class="dl"><button type="button" id="dlgC">Cancelar</button><button class="primary" value="ok">Confirmar</button></div>
@@ -358,6 +366,14 @@ O|Fundamentos de Educação Ambiental|64|
 O|Parasitologia|64|
 O|Tópicos Especiais em Fisioterapia|32|
 O|Primeiros Socorros|32|`.split('\n').filter(Boolean);
+
+// Sites de apoio: aparecem na barra lateral e no Início dos cursos listados em "cursos"
+const LINKS=[
+ {nome:'Atlas de Anatomia – UNEB',url:'https://atlasanatomia.uneb.br/',desc:'Fotos de peças anatômicas por sistemas, mapas conceituais, curiosidades e exercícios.',cursos:['fisio']},
+ {nome:'Anatomia & Fisioterapia',url:'https://anatomiaefisioterapia.com/',desc:'Resumos e roteiros de estudo, vídeos, listas de exercícios e e-books de anatomia e fisioterapia.',cursos:['fisio']}
+];
+
+const VERSAO='23/11/2026';
 const KEY='biblioteca-estudos-v2',UIK='biblioteca-estudos-ui';
 const STATUS={estudar:'A estudar',estudando:'Estudando',revisar:'Revisar',mais:'Estudar mais',concluido:'Concluído'};
 const $=s=>document.querySelector(s);
@@ -575,6 +591,15 @@ function rArv(){
   $('#arv').innerHTML=h||`<p class="dica">${q?'Nada encontrado.':'Nenhuma matéria neste curso ainda. Use ＋ Matéria para começar.'}</p>`;
   const on=document.querySelector('#arv .on');if(on)on.scrollIntoView({block:'nearest'});
 }
+function linksDoCurso(){return LINKS.filter(l=>l.cursos.includes(cur()));}
+function rLinks(){
+  const ls=linksDoCurso(),box=$('#lkBox');box.hidden=!ls.length;
+  $('#lkLista').innerHTML=ls.map(l=>`<a class="lkx" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">${esc(l.nome)} ↗<small>${esc(l.desc)}</small></a>`).join('');
+}
+function linksHome(){
+  const ls=linksDoCurso();if(!ls.length)return'';
+  return`<h3 class="sec">Sites de apoio</h3><div class="gr" style="margin-bottom:20px">${ls.map(l=>`<a class="pc" style="--c:var(--ac)" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><h3>${esc(l.nome)} ↗</h3><div class="dica">${esc(l.desc)}</div></a>`).join('')}</div>`;
+}
 function crumbs(){
   const m=mat(selM);
   let h='<div class="bc" role="navigation" aria-label="Você está em"><button data-a="home">Início</button>';
@@ -607,7 +632,7 @@ function rHome(){
   $('#pri').innerHTML=`<h2 style="margin-top:0">Início <span class="dica">· ${esc(CURSOS.find(c=>c.id===cur()).nome)}</span></h2>${cont}
    <div class="cards">${Object.keys(STATUS).map(k=>`<button class="card s-${k}" data-a="status" data-s="${k}"><b>${c[k]}</b>${STATUS[k]}</button>`).join('')}<div class="card"><b>${fmt(seg)}</b>Tempo de estudo</div></div>
    <p class="dica" style="margin-top:-12px">Clique em um status para ver os tópicos marcados.</p>
-   <h3 class="sec">Períodos e matérias</h3><div class="gr">${cards}</div>
+   ${linksHome()}<h3 class="sec">Períodos e matérias</h3><div class="gr">${cards}</div>
    <h3>Para revisar e reforçar</h3>${rev.length?rev.slice(0,10).map(([m,t])=>`<button class="lk" data-a="top" data-t="${t.id}"><span class="bd s-${t.status}">${STATUS[t.status]}</span> ${esc(t.titulo)} <span class="dica">· ${esc(m.nome)}</span></button>`).join(''):'<p class="dica">Nenhum tópico marcado como Revisar ou Estudar mais.</p>'}
    <h3>Últimas alterações salvas</h3>${logHTML(db.log.slice(0,8))}`;
 }
@@ -644,12 +669,16 @@ function rMat(){
   const m=mat(selM);if(!m){view='home';return rHome();}
   const pr=prog([m]),seg=m.topicos.reduce((s,t)=>s+(t.tempo||0),0);
   $('#pri').innerHTML=crumbs()+`<div class="hd" style="--c:${pcor(m.per)}"><input id="fTit" class="tit" value="${esc(m.nome)}" aria-label="Nome da matéria">
-   <div class="dica">${gname(m.per)} · ${m.h?m.h+'h · ':''}${m.topicos.length} tópicos · ${pr.c} concluído${pr.c===1?'':'s'} · ${fmt(seg)} de estudo</div>${bar(pr.p,'var(--c)')}</div>
+   <div class="dica">${gname(m.per)} · ${m.h?m.h+'h · ':''}${m.topicos.length} tópicos · ${pr.c} concluído${pr.c===1?'':'s'} · ${fmt(seg)} de estudo</div>
+   <div class="row" style="margin:10px 0 0"><label for="fPer" class="dica" style="margin:0">Mover para o período:</label><select id="fPer">${GRUPOS.map(g=>`<option value="${g}"${m.per===g?' selected':''}>${gname(g)}</option>`).join('')}</select></div>${bar(pr.p,'var(--c)')}</div>
    <div class="cols"><div><h3 class="sec">Tópicos</h3><div class="gr">
     ${m.topicos.map(t=>`<button class="tc s-${t.status}" data-a="top" data-t="${t.id}"><b>${esc(t.titulo)}</b><span class="bd">${STATUS[t.status]}</span>${t.tempo?`<span class="dica">${fmt(t.tempo)} de estudo</span>`:''}</button>`).join('')}
     <button class="tc add" data-a="novoT" data-m="${m.id}">+ Novo tópico</button></div>
     <div class="p" style="margin-top:16px">${pastaHTML(m)}</div></div>
    <div>${blocoHTML(m,null)}<button id="bDel" class="perigo">Excluir matéria</button></div></div>`;
+  $('#fPer').addEventListener('change',e=>{
+    const de=gname(m.per);m.per=e.target.value;grp.add(m.per);
+    mudou('mv'+m.id,`Matéria "${m.nome}" movida de ${de} para ${gname(m.per)}`);render();});
   $('#fTit').addEventListener('input',e=>{m.nome=e.target.value;mudou('nm'+m.id,`Matéria renomeada para "${m.nome}"`);rArv();});
   $('#bDel').onclick=()=>{
     if(!confirm(`Excluir a matéria "${m.nome}" com seus ${m.topicos.length} tópicos e arquivos?`))return;
@@ -692,7 +721,7 @@ function tickCron(){
 }
 setInterval(()=>{if(cron&&view==='top')tickCron();},1000);
 
-function render(){const cc=CURSOS.find(c=>c.id===cur());$('#cursoNome').textContent=cc.sigla;$('#bCurso').title='Curso atual: '+cc.nome+' — clique para trocar';const nb=$('#bNotas');nb.hidden=!(view==='top'||view==='mat');if(nb.hidden)document.body.classList.remove('notas');rArv();view==='top'?rTop():view==='mat'?rMat():view==='hist'?rHist():view==='status'?rStatus():rHome();estado();}
+function render(){rLinks();const cc=CURSOS.find(c=>c.id===cur());$('#cursoNome').textContent=cc.sigla;$('#bCurso').title='Curso atual: '+cc.nome+' — clique para trocar';const nb=$('#bNotas');nb.hidden=!(view==='top'||view==='mat');if(nb.hidden)document.body.classList.remove('notas');rArv();view==='top'?rTop():view==='mat'?rMat():view==='hist'?rHist():view==='status'?rStatus():rHome();estado();}
 function ir(v){parar();if(v!=='top')pararCron();view=v;render();}
 
 /* ---------- exportação ---------- */
@@ -838,6 +867,7 @@ document.addEventListener('keydown',e=>{
   if(k==='s'){e.preventDefault();salvar();}else if(k==='b'){e.preventDefault();$('#bMenu').click();}});
 addEventListener('beforeunload',e=>{if(dirty||cron){e.preventDefault();e.returnValue='';}});
 try{const u=localStorage.getItem(UIK);if(u==='1'||(u===null&&innerWidth<=860))ui(true);}catch(e){}
+$('#ver').textContent=$('#verIntro').textContent='Versão '+VERSAO;
 $('#bPasta').onclick=escolherPasta;
 atualizaPasta();
 if(temFS)idbDo('readonly',s=>s.get('raiz'),'cfg').then(hd=>{if(hd){pasta=hd;return permissao(false);}}).then(()=>{atualizaPasta();if(view==='top'||view==='mat')render();}).catch(()=>{});
